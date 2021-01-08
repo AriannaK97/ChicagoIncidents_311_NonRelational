@@ -81,9 +81,7 @@ DATABASES = {
     'default': {
         'ENGINE': 'djongo',
         'NAME': 'ci_311db',
-        'ENFORCE_SCHEMA': True
-        # 'HOST': '127.0.0.1',
-        # 'PORT': 27017,
+        'ENFORCE_SCHEMA': False
     }
 }
 

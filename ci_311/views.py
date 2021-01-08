@@ -1,30 +1,69 @@
-from rest_framework import viewsets, status, permissions
-from rest_framework.decorators import api_view
-from rest_framework.permissions import AllowAny
-from rest_framework.views import APIView
-from rest_framework.response import Response
+from django.http import JsonResponse
 from ci_311.models import *
-from ci_311.serializers import *
+from django.core import serializers
 
 
-class IncidentViewSet(APIView):
-    '''
-    Contains information about inputs/outputs of a single program
-    that may be used in Universe workflows.
-    '''
-    permission_classes = [AllowAny]
+def incident_view(request):
+    incidents = [incident for incident in Incident.objects.all()]
+    data = serializers.serialize("json", incidents)
+    return JsonResponse(data, safe=False)
 
-    def post(self, request, format=None):
 
-        if request.method == 'GET':
-            incidents = Incident.objects.all()
-            serializer = IncidentSerializer(incidents, many=True)
-            return Response(IncidentSerializer.data)
+def query1_view(request):
+    data = None
+    return JsonResponse(data, safe=False)
 
-        elif request.method == 'POST':
-            serializer = IncidentSerializer(data=request.data)
-            if serializer.is_valid():
-                serializer.save()
-                return Response(serializer.data, status=status.HTTP_201_CREATED)
-            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
+def query2_view(request):
+    data = None
+    return JsonResponse(data, safe=False)
+
+
+def query3_view(request):
+    data = None
+    return JsonResponse(data, safe=False)
+
+
+def query4_view(request):
+    data = None
+    return JsonResponse(data, safe=False)
+
+
+def query5_view(request):
+    data = None
+    return JsonResponse(data, safe=False)
+
+
+def query6_view(request):
+    data = None
+    return JsonResponse(data, safe=False)
+
+
+def query7_view(request):
+    data = None
+    return JsonResponse(data, safe=False)
+
+
+def query8_view(request):
+    data = None
+    return JsonResponse(data, safe=False)
+
+
+def query9_view(request):
+    data = None
+    return JsonResponse(data, safe=False)
+
+
+def query10_view(request):
+    data = None
+    return JsonResponse(data, safe=False)
+
+
+def query11_view(request):
+    data = None
+    return JsonResponse(data, safe=False)
+
+
+def query12_view(request):
+    data = None
+    return JsonResponse(data, safe=False)
