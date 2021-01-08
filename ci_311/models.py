@@ -3,7 +3,7 @@ from djongo import models
 
 class Incident(models.Model):
     # Common fields for all incidents
-    name = models.CharField(null=True, default=None, max_length=255)
+    _id = models.ObjectIdField()
     creationDate = models.DateTimeField(null=False)
     completionDate = models.DateTimeField(null=False)
     serviceRequestNumber = models.CharField(null=True, default=None, max_length=255)
