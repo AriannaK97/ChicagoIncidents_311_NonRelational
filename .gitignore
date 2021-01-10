@@ -1,3 +1,4 @@
 .idea
 venv
 __pycache__/
+ci_311/migrations/

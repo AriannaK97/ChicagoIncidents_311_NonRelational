@@ -4,7 +4,8 @@ from django.core import serializers
 
 
 def incident_view(request):
-    incidents = [incident for incident in Incident.objects.all()]
+
+    incidents = Incident.objects.filter(_id="5ffa3fe449ba80f666934888")
     data = serializers.serialize("json", incidents)
     return JsonResponse(data, safe=False)
 

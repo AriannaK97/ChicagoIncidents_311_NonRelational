@@ -1,7 +1,12 @@
 import glob
 import os
 import pandas as pd
+import csv
+import json
 from datetime import datetime
+
+
+# 2018-12-18T00:00:00.000
 
 
 class MigrateDb:
@@ -18,10 +23,10 @@ class MigrateDb:
                        'historical_wards_2003_2015', 'zipcodes', 'communityAreas', 'censusTracts', 'wards']
 
     potholes_fields = ['creationDate', 'statusType', 'completionDate', 'serviceRequestNumber', 'requestType',
-                        'currentActivity', 'mostRecentAction', 'filledBlockPotholesNum', 'streetAddress',
-                        'zipcode', 'x_coordinate', 'y_coordinate', 'ward', 'policeDistrict', 'communityArea',
-                        'SSA', 'latitude', 'longitude', 'location', 'historical_wards_2003_2015', 'zipcodes',
-                        'communityAreas', 'censusTracts', 'wards']
+                       'currentActivity', 'mostRecentAction', 'filledBlockPotholesNum', 'streetAddress',
+                       'zipcode', 'x_coordinate', 'y_coordinate', 'ward', 'policeDistrict', 'communityArea',
+                       'SSA', 'latitude', 'longitude', 'location', 'historical_wards_2003_2015', 'zipcodes',
+                       'communityAreas', 'censusTracts', 'wards']
 
     garbage_carts_fields = ['creationDate', 'statusType', 'completionDate', 'serviceRequestNumber', 'requestType',
                             'deliveredBlackCartsNum', 'currentActivity', 'mostRecentAction', 'streetAddress',
@@ -105,6 +110,30 @@ class MigrateDb:
                 df = pd.read_csv(file, header=0, names=cur_fields)
                 df.to_csv(path_or_buf=file, index=False)
 
+    # Function to convert a CSV to JSON
+    # Takes the file paths as arguments
+    @staticmethod
+    def make_json(csv_file_path, json_file_path):
+
+        # create a dictionary
+        data = {}
+
+        # Open a csv reader called DictReader
+        with open(csv_file_path, encoding='utf-8') as csvf:
+            csv_reader = csv.DictReader(csvf)
+
+            # Convert each row into a dictionary
+            # and add it to data
+            for rows in csv_reader:
+                # Assuming a column named 'No' to
+                # be the primary key
+                key = rows['serviceRequestNumber']
+                data[key] = rows
+        # Open a json writer, and use the json.dumps()
+        # function to dump data
+        with open(json_file_path, 'w', encoding='utf-8') as jsonf:
+            jsonf.write(json.dumps(data, indent=4))
+
     def read(self):
         """
         Read a resource from the file specified
@@ -115,15 +144,15 @@ class MigrateDb:
         for file in all_files:
             print("\nImporting file: " + file + "\n")
             command = "mongoimport -d ci_311db -c ci_311_incident --type csv --file " + file + " --headerline " \
-                                                                                               "--numInsertionWorkers 4"
+                                                                        "--columnsHaveTypes --numInsertionWorkers 4"
             os.system(command)
         end_time = datetime.now()
-        print("All CSVs imported in collection.\nTotal import time: " + str(end_time-start_time))
+        print("All CSVs imported in collection.\nTotal import time: " + str(end_time - start_time))
 
 
 if __name__ == "__main__":
     migration = MigrateDb()
     print("Replacing csv field names")
     migration.replace_csv_header()
-    print("Start data migration")
-    migration.read()
+    #print("Start data migration")
+    #migration.read()
