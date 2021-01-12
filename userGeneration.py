@@ -16,10 +16,11 @@ fake = Factory.create()
 client = MongoClient()
 db = client['ci_311db']
 incidentCollection = db['ci_311_incident']
-userCollection = db['users']
+userCollection = db['ci_311_users']
 
 
-bulk = userCollection.initialize_unordered_bulk_op()
+bulkUsers = userCollection.initialize_unordered_bulk_op()
+bulkIncidents = incidentCollection.initialize_unordered_bulk_op()
 
 
 for i in range(batchSize):
@@ -28,17 +29,30 @@ for i in range(batchSize):
 
     if (i % bulkSize == (bulkSize - 1)): #bulk write
         try:
-            bulk.execute()
+            bulkUsers.execute()
+            bulkIncidents.execute()
         except BulkWriteError as bwe:
             pprint(bwe.details)
-        bulk = userCollection.initialize_unordered_bulk_op()
+        bulkUsers = userCollection.initialize_unordered_bulk_op()
+        bulkIncidents = incidentCollection.initialize_unordered_bulk_op()
 
     try:
-        upvotes = list(incidentCollection.aggregate([{"$sample": {"size": randint(1, 1000)}}]))
-        result=bulk.insert({
-                            "name" : fake.name(),
-                            "phone": fake.phone_number(),
-                            "address": fake.address(),
+        #upvotes = list(incidentCollection.aggregate([{"$sample": {"size": randint(1, 1000)}}]))
+        upvotes = []
+        incidents = incidentCollection.aggregate([{"$sample": {"size": randint(1, 1000)}}])
+        name = fake.name()
+        phone = fake.phone_number()
+        address = fake.address()
+
+        for incident in incidents:
+        	upvotes.append(incident.get('_id'))
+        	incidentResult = bulkIncidents.find({ '_id': incident.get('_id') }).update( { "$addToSet": { "names" : name } })
+
+
+        result=bulkUsers.insert({
+                            "name" : name,
+                            "phone": phone,
+                            "address": address,
                             "upvotes": upvotes
         })
     except Exception as e:
