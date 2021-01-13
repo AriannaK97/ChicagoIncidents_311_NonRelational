@@ -62,8 +62,8 @@ db.ci_311_users.aggregate([
 db.ci_311_users.aggregate([
     {$group:
             {
-                _id: {phone: "$phone"},
-                uniquePhones: {$addToSet: "$_id"},
+                _id: "$phone",
+                incidentsForUniquePhones: {$addToSet: "$_id"},
                 count: {$sum: 1}
             }
     },
@@ -73,7 +73,7 @@ db.ci_311_users.aggregate([
     {$project:
             {
                 _id: 1,
-                uniquePhones: 1,
+                incidentsForUniquePhones: 1,
                 count: 1
             }
     }

@@ -81,7 +81,27 @@ db.ci_311_incident.aggregate([
 
 
 def query4_view(request):
-    data = None
+
+    client = MongoClient()
+    db = client['ci_311db']
+    incident_collection = db['ci_311_incident']
+
+    request_type = request.GET.get('requestType')
+
+    query_raw_data = incident_collection.aggregate([
+        {"$match": {"requestType": request_type}},
+        {"$group": {
+            "_id": "$ward",
+            "count": {"$sum": 1}
+        }},
+        {"$sort": {"count": 1}},
+        {"$limit": 3},
+        {"$project": {"ward": 1, "count": 1}}
+    ])
+
+    data = []
+    for i in query_raw_data:
+        data.append(i)
     return JsonResponse(data, safe=False)
 
 
@@ -92,7 +112,7 @@ def query5_view(request):
 
 '''
 db.ci_311_incident.aggregate([
-    {$match:
+    {$match:    
             {
                 creationDate: new ISODate("2015-06-04T21:00:00.000Z"),
                 latitude: {$gt: 41.80550003051758, $lt: 41.80963897705078},
@@ -110,7 +130,39 @@ db.ci_311_incident.aggregate([
 
 
 def query6_view(request):
-    data = None
+    client = MongoClient()
+    db = client['ci_311db']
+    incident_collection = db['ci_311_incident']
+
+    date_str = request.GET.get('Date')
+    latitude_1 = float(request.GET.get('latitude_1'))
+    latitude_2 = float(request.GET.get('latitude_2'))
+    longitude_1 = float(request.GET.get('longitude_1'))
+    longitude_2 = float(request.GET.get('longitude_2'))
+
+    date = datetime.datetime.strptime(date_str, '%Y-%m-%dT%H:%M:%SZ')
+
+    query_raw_data = incident_collection.aggregate(pipeline=[
+        {"$match":
+            {
+                "creationDate": date,
+                "latitude": {"$gt": latitude_1, "$lt": latitude_2},
+                "longitude": {"$gt": longitude_1, "$lt": longitude_2}
+            }},
+        {"$group": {
+            "_id": "$requestType",
+            "count": {"$sum": 1}
+        }},
+        {"$sort": {"count": -1}},
+        {"$limit": 1}
+    ],
+        allowDiskUse=True
+    )
+
+    data = []
+    for i in query_raw_data:
+        data.append([i["_id"], i["count"]])
+
     return JsonResponse(data, safe=False)
 
 
@@ -134,7 +186,25 @@ db.ci_311_users.aggregate([
 
 
 def query8_view(request):
-    data = None
+    client = MongoClient()
+    db = client['ci_311db']
+    users_collection = db['ci_311_users']
+
+    query_raw_data = users_collection.aggregate([
+        {"$project": {
+           "_id": 0,
+           "name": 1,
+           "numberOfIncidents": {"$cond": {"if": {"$isArray": "$upvotes"}, "then": {"$size": "$upvotes"}, "else": "NA"}}
+        }},
+        {"$sort": {"numberOfIncidents": -1}},
+        {"$limit": 50}
+    ],
+        allowDiskUse=True
+    )
+
+    data = []
+    for i in query_raw_data:
+        data.append(i)
     return JsonResponse(data, safe=False)
 
 
@@ -147,8 +217,8 @@ def query9_view(request):
 db.ci_311_users.aggregate([
     {$group:
             {
-                _id: {phone: "$phone"},
-                uniquePhones: {$addToSet: "$_id"},
+                _id: "$phone",
+                incidentsForUniquePhones: {$addToSet: "$_id"},
                 count: {$sum: 1}
             }
     },
@@ -158,7 +228,7 @@ db.ci_311_users.aggregate([
     {$project:
             {
                 _id: 1,
-                uniquePhones: 1,
+                incidentsForUniquePhones: 1,
                 count: 1
             }
     }
@@ -167,7 +237,33 @@ db.ci_311_users.aggregate([
 
 
 def query10_view(request):
-    data = None
+    client = MongoClient()
+    db = client['ci_311db']
+    users_collection = db['ci_311_users']
+
+    raw_query_data = users_collection.aggregate([
+        {"$group": {
+                    "_id": "$phone",
+                    "incidentsForUniquePhones": {"$addToSet": "$_id"},
+                    "count": {"$sum": 1}
+
+        }},
+        {"$match": {
+            "count": {"$gt": 1}
+        }},
+        {"$project": {
+                    "_id": 1,
+                    "incidentsForUniquePhones": 1,
+                    "count": 1
+        }}
+    ],
+        allowDiskUse=True
+    )
+
+    data = []
+    for i in raw_query_data:
+        data.append([i["_id"], str(i["incidentsForUniquePhones"]), i["count"]])
+    print(data)
     return JsonResponse(data, safe=False)
 
 
