@@ -16,7 +16,31 @@ def incident_view(request):
 
 
 def query1_view(request):
-    data = None
+    client = MongoClient()
+    db = client['ci_311db']
+    incident_collection = db['ci_311_incident']
+
+    start_date_str = request.GET.get('startDate')
+    end_date_str = request.GET.get('endDate')
+
+    start_date = datetime.datetime.strptime(start_date_str, '%Y-%m-%dT%H:%M:%SZ')
+    end_date = datetime.datetime.strptime(end_date_str, '%Y-%m-%dT%H:%M:%SZ')
+
+    query_raw_data = incident_collection.aggregate(pipeline=[
+        {"$match": {"creationDate":
+        {
+            "$gte": start_date,
+            "$lte": end_date
+        }
+        }
+        },
+        {"$group": { "_id": "$requestType", "total": { "$sum": 1}}},
+        {"$sort": {"total": -1}},
+        {"$project": {"_id": 0, "requestType": "$_id", "total": 1}}
+    ])
+    data = []
+    for i in query_raw_data:
+        data.append(i)
     return JsonResponse(data, safe=False)
 
 
@@ -62,7 +86,46 @@ def query2_view(request):
 
 
 def query3_view(request):
-    data = None
+    client = MongoClient()
+    db = client['ci_311db']
+    incident_collection = db['ci_311_incident']
+
+    start_date_str = request.GET.get('startDate')
+    end_date_str = request.GET.get('endDate')
+
+    start_date = datetime.datetime.strptime(start_date_str, '%Y-%m-%dT%H:%M:%SZ')
+    end_date = datetime.datetime.strptime(end_date_str, '%Y-%m-%dT%H:%M:%SZ')
+
+    query_raw_data = incident_collection.aggregate(pipeline=[
+        { "$match": {"creationDate": {
+        "$gte": start_date,
+        "$lt": end_date
+        }}
+        },
+        {"$group": {
+            "_id": {
+                "zipcode": "$zipcode",
+                "requestType": "$requestType",
+            },
+            "requestCount": {"$sum": 1}
+        }},
+        {"$sort": {"requestCount": -1}},
+        {"$group": {
+            "_id": "$_id.zipcode",
+            "requestTypes": {
+                "$push": {
+                    "requestType": "$_id.requestType",
+                    "count": "$requestCount"
+                },
+            }
+        }},
+        {"$sort": {"_id": 1}},
+        {"$project": {"_id": 0, "zipcode": "$_id", "RequestTypes": {"$slice": ["$requestTypes", 3]}}}
+    ])
+    data = []
+    for i in query_raw_data:
+        data.append(i)
+
     return JsonResponse(data, safe=False)
 
 
@@ -104,9 +167,33 @@ def query4_view(request):
         data.append(i)
     return JsonResponse(data, safe=False)
 
-
+#TODO: CHECK HOW TO PASS NULL....
 def query5_view(request):
-    data = None
+    client = MongoClient()
+    db = client['ci_311db']
+    incident_collection = db['ci_311_incident']
+
+    start_date_str = request.GET.get('startDate')
+    end_date_str = request.GET.get('endDate')
+
+    start_date = datetime.datetime.strptime(start_date_str, '%Y-%m-%dT%H:%M:%SZ')
+    end_date = datetime.datetime.strptime(end_date_str, '%Y-%m-%dT%H:%M:%SZ')
+
+    query_raw_data = incident_collection.aggregate(pipeline=[
+        {"$match": {"$expr": {"$and": [
+            {"$gt": ["$completionDate", "$creationDate"]},
+            {"$gte": ["$creationDate", start_date]},
+            {"$lte": ["$creationDate", end_date]}]}
+        }},
+        {"$group": {
+            "_id": None,
+            "averageTime": {"$avg": {"$divide": [{"$subtract": ["$completionDate", "$creationDate"]}, 3600000 * 24]}}
+        }},
+        {"$project": {"_id": 0, "Average Request Time": "$averageTime"}}
+        ])
+    data = []
+    for i in query_raw_data:
+        data.append(i)
     return JsonResponse(data, safe=False)
 
 
@@ -167,7 +254,33 @@ def query6_view(request):
 
 
 def query7_view(request):
-    data = None
+    client = MongoClient()
+    db = client['ci_311db']
+    incident_collection = db['ci_311_incident']
+
+    start_date_str = request.GET.get('startDate')
+    end_date_str = request.GET.get('endDate')
+
+    start_date = datetime.datetime.strptime(start_date_str, '%Y-%m-%dT%H:%M:%SZ')
+    end_date = datetime.datetime.strptime(end_date_str, '%Y-%m-%dT%H:%M:%SZ')
+
+    query_raw_data = incident_collection.aggregate(pipeline=[
+        {"$match": {"creationDate": {
+            "$gte": start_date,
+            "$lt": end_date
+        },
+            "names": {"$exists": True}
+        }},
+        {"$unwind": "$names"},
+        {"$group": {"_id": '$_id', 'count': { "$sum": 1}}},
+        {"$sort": {"count": -1}},
+        {"$limit": 50}
+    ],
+        allowDiskUse=True
+    )
+    data = []
+    for i in query_raw_data:
+        data.append([i["_id"], i["count"]])
     return JsonResponse(data, safe=False)
 
 
@@ -209,7 +322,27 @@ def query8_view(request):
 
 
 def query9_view(request):
-    data = None
+    client = MongoClient()
+    db = client['ci_311db']
+    incident_collection = db['ci_311_incident']
+    query_raw_data = incident_collection.aggregate(pipeline=[
+        {"$unwind": "$names"},
+        {"$group": {
+            "_id": {
+                "upvotes": "$names",
+                "ward": "$ward",
+            },
+            "wardCount": {"$sum": 1}
+        }},
+        {"$sort": {"wardCount": -1}},
+        {"$limit": 50},
+        {"$project": {"_id": 0, "Name": "$_id.upvotes", "totalWards": "$wardCount"}}
+
+    ], allowDiskUse=True)
+
+    data = []
+    for i in query_raw_data:
+        data.append(i)
     return JsonResponse(data, safe=False)
 
 
@@ -268,7 +401,22 @@ def query10_view(request):
 
 
 def query11_view(request):
-    data = None
+    client = MongoClient()
+    db = client['ci_311db']
+    incident_collection = db['ci_311_incident']
+    name = request.GET.get('name')
+    query_raw_data = incident_collection.aggregate(pipeline=[
+        {"$unwind": "$names"},
+        {"$match": {"names": name}},
+        {"$group": {"_id": "$ward"}},
+        {"$project": {"_id": 0, "WardIds": "$_id"}}
+    ],
+        allowDiskUse=True
+    )
+
+    data = []
+    for i in query_raw_data:
+        data.append(i)
     return JsonResponse(data, safe=False)
 
 
