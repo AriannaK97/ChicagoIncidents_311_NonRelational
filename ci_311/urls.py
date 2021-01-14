@@ -20,4 +20,5 @@ urlpatterns += [
     path('query10/', query10_view, name='query10'),
     path('query11/', query11_view, name='query11'),
     path('query12/', query12_view, name='query12'),
+    path('upvote/', upvote_view, name='upvote'),
 ]

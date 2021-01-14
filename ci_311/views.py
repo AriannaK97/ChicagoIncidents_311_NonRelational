@@ -6,7 +6,7 @@ from django.http import JsonResponse
 from ci_311.models import *
 from django.core import serializers
 from pymongo import MongoClient
-
+from bson.objectid import ObjectId
 
 def incident_view(request):
     id = '5ff8ae49de4f5fd78275d71c'
@@ -421,5 +421,29 @@ def query11_view(request):
 
 
 def query12_view(request):
+    data = None
+    return JsonResponse(data, safe=False)
+
+
+def upvote_view(request):
+    print("here")
+
+    client = MongoClient()
+    db = client['ci_311db']
+    testsCollection = db['mytests']
+    users_collection = db['ci_311_users']
+    incident_collection = db['ci_311_incident']
+
+    result = users_collection.update_one({"name": "Karina Alexander"},
+                                    {"$addToSet": {"upvotes": ObjectId("5ffcb7c14892110beb2bb4b1")}})
+
+    if result.modified_count != 0:
+        incident_result = incident_collection.update_one({"_id": ObjectId("5ffcb7c14892110beb2bb4b1")},
+                                                        {"$addToSet": {"names": "Karina Alexander"}})
+        print("Incident fields modified")
+        print(incident_result.modified_count)
+
+    print("User Fields modified:")
+    print(result.modified_count)
     data = None
     return JsonResponse(data, safe=False)
