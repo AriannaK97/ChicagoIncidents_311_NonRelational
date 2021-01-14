@@ -10,6 +10,10 @@ from rest_framework.views import APIView
 from ci_311.models import *
 from django.core import serializers
 from pymongo import MongoClient
+from bson.objectid import ObjectId
+from rest_framework.decorators import api_view
+from rest_framework.parsers import JSONParser
+import json
 
 
 def incident_view(request):
@@ -60,6 +64,7 @@ db.ci_311_incident.aggregate([
 
 
 def query2_view(request):
+
     client = MongoClient()
     db = client['ci_311db']
     incident_collection = db['ci_311_incident']
@@ -460,3 +465,29 @@ def insert_new_incident(request):
         return JsonResponse(message, safe=False, status=status.HTTP_201_CREATED)
 
     return JsonResponse("Error", safe=False, status=status.HTTP_501_NOT_IMPLEMENTED)
+
+
+@api_view(['PUT'])
+def upvote_view(request):
+
+    client = MongoClient()
+    db = client['ci_311db']
+    testsCollection = db['mytests']
+    users_collection = db['ci_311_users']
+    incident_collection = db['ci_311_incident']
+
+    parameters_dict = json.loads(request.body)
+    result = users_collection.update_one({"name": parameters_dict['name']},
+                                    {"$addToSet": {"upvotes": ObjectId(parameters_dict['id'])}})
+
+    if result.modified_count != 0:
+        incident_result = incident_collection.update_one({"_id": ObjectId(parameters_dict['id'])},
+                                                        {"$addToSet": {"names": parameters_dict['name']}})
+        print("Incident fields modified")
+        print(incident_result.modified_count)
+
+    print("User Fields modified:")
+    print(result.modified_count)
+    data = result.modified_count
+    return JsonResponse(data, safe=False)
+
