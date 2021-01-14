@@ -79,7 +79,7 @@ db.ci_311_incident.aggregate([
 db.ci_311_incident.aggregate([
     {$match:
             {
-                creationDate: new ISODate("2015-06-04T21:00:00.000Z"),
+                creationDate: new ISODate("2015-06-04T21:00:00Z"),
                 latitude: {$gt: 41.80550003051758, $lt: 41.80963897705078},
                 longitude: {$gt: -87.70037841796875, $lt: -87.62371063232422}
             }
@@ -121,7 +121,9 @@ db.ci_311_users.aggregate([
     {$sort:{numberOfIncidents:-1}},
     {$limit:50}
 ])
-
+#38 s 739 ms without indexes
+#25 s 411 ms with index in ward
+#24 s 899 ms with ward and name index
 #Query 9
 db.ci_311_incident.aggregate([
     { "$unwind": "$names" },

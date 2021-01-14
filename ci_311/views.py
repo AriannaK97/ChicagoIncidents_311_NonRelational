@@ -1,8 +1,12 @@
 import datetime
 import json
+import re
 
 from django.core.serializers.json import DjangoJSONEncoder
 from django.http import JsonResponse
+from rest_framework import status
+from rest_framework.views import APIView
+
 from ci_311.models import *
 from django.core import serializers
 from pymongo import MongoClient
@@ -28,13 +32,13 @@ def query1_view(request):
 
     query_raw_data = incident_collection.aggregate(pipeline=[
         {"$match": {"creationDate":
-        {
-            "$gte": start_date,
-            "$lte": end_date
-        }
+            {
+                "$gte": start_date,
+                "$lte": end_date
+            }
         }
         },
-        {"$group": { "_id": "$requestType", "total": { "$sum": 1}}},
+        {"$group": {"_id": "$requestType", "total": {"$sum": 1}}},
         {"$sort": {"total": -1}},
         {"$project": {"_id": 0, "requestType": "$_id", "total": 1}}
     ])
@@ -97,9 +101,9 @@ def query3_view(request):
     end_date = datetime.datetime.strptime(end_date_str, '%Y-%m-%dT%H:%M:%SZ')
 
     query_raw_data = incident_collection.aggregate(pipeline=[
-        { "$match": {"creationDate": {
-        "$gte": start_date,
-        "$lt": end_date
+        {"$match": {"creationDate": {
+            "$gte": start_date,
+            "$lt": end_date
         }}
         },
         {"$group": {
@@ -144,7 +148,6 @@ db.ci_311_incident.aggregate([
 
 
 def query4_view(request):
-
     client = MongoClient()
     db = client['ci_311db']
     incident_collection = db['ci_311_incident']
@@ -167,7 +170,8 @@ def query4_view(request):
         data.append(i)
     return JsonResponse(data, safe=False)
 
-#TODO: CHECK HOW TO PASS NULL....
+
+# TODO: CHECK HOW TO PASS NULL....
 def query5_view(request):
     client = MongoClient()
     db = client['ci_311db']
@@ -190,7 +194,7 @@ def query5_view(request):
             "averageTime": {"$avg": {"$divide": [{"$subtract": ["$completionDate", "$creationDate"]}, 3600000 * 24]}}
         }},
         {"$project": {"_id": 0, "Average Request Time": "$averageTime"}}
-        ])
+    ])
     data = []
     for i in query_raw_data:
         data.append(i)
@@ -214,6 +218,9 @@ db.ci_311_incident.aggregate([
     {$limit: 1}
 ])
 '''
+
+#http://127.0.0.1:8000/query6/?Date=2015-06-04T21:00:00Z&latitude_1=41.80550003051758&latitude_2=41.80963897705078
+# &longitude_1=-87.70037841796875&longitude_2=-87.62371063232422
 
 
 def query6_view(request):
@@ -272,7 +279,7 @@ def query7_view(request):
             "names": {"$exists": True}
         }},
         {"$unwind": "$names"},
-        {"$group": {"_id": '$_id', 'count': { "$sum": 1}}},
+        {"$group": {"_id": '$_id', 'count': {"$sum": 1}}},
         {"$sort": {"count": -1}},
         {"$limit": 50}
     ],
@@ -280,7 +287,7 @@ def query7_view(request):
     )
     data = []
     for i in query_raw_data:
-        data.append([i["_id"], i["count"]])
+        data.append([str(i["_id"]), i["count"]])
     return JsonResponse(data, safe=False)
 
 
@@ -305,9 +312,10 @@ def query8_view(request):
 
     query_raw_data = users_collection.aggregate([
         {"$project": {
-           "_id": 0,
-           "name": 1,
-           "numberOfIncidents": {"$cond": {"if": {"$isArray": "$upvotes"}, "then": {"$size": "$upvotes"}, "else": "NA"}}
+            "_id": 0,
+            "name": 1,
+            "numberOfIncidents": {
+                "$cond": {"if": {"$isArray": "$upvotes"}, "then": {"$size": "$upvotes"}, "else": "NA"}}
         }},
         {"$sort": {"numberOfIncidents": -1}},
         {"$limit": 50}
@@ -375,27 +383,26 @@ def query10_view(request):
     users_collection = db['ci_311_users']
 
     raw_query_data = users_collection.aggregate([
-        {"$group": {
-                    "_id": "$phone",
-                    "incidentsForUniquePhones": {"$addToSet": "$_id"},
-                    "count": {"$sum": 1}
 
-        }},
-        {"$match": {
-            "count": {"$gt": 1}
-        }},
-        {"$project": {
-                    "_id": 1,
-                    "incidentsForUniquePhones": 1,
-                    "count": 1
-        }}
-    ],
-        allowDiskUse=True
-    )
+    {"$group": {
+                "_id": { "phone":"$phone"},
+                "incidentsForUniquePhones": {"$addToSet": "$upvotes"},
+                "count": {"$sum": 1}
+
+    }},
+    {"$match": {
+        "count": {"$gt": 1}
+    }},
+    {"$project": {
+                "_id": 1,
+                "incidentsForUniquePhones": 1,
+
+    }}
+    ], allowDiskUse=True)
 
     data = []
     for i in raw_query_data:
-        data.append([i["_id"], str(i["incidentsForUniquePhones"]), i["count"]])
+        data.append([i["_id"], str(i["incidentsForUniquePhones"])])
     print(data)
     return JsonResponse(data, safe=False)
 
@@ -423,3 +430,33 @@ def query11_view(request):
 def query12_view(request):
     data = None
     return JsonResponse(data, safe=False)
+
+
+def insert_new_incident(request):
+    received_json_data = json.loads(request.body.decode("utf-8"))
+
+    client = MongoClient()
+    db = client['ci_311db']
+    incident_collection = db['ci_311_incident']
+
+    valid_request_types = incident_collection.distinct("requestType")
+
+    if received_json_data['requestType'] in valid_request_types:
+
+        print("Ok " + received_json_data['requestType'])
+
+        creation_date = datetime.datetime.now()
+        service_request_number = str(creation_date.year) + "-" + re.sub('[^A-Za-z0-9,-]', '', str(creation_date.time()))
+        # tutorial_data = JSONParser().parse(request)
+        received_json_data.update({"creationDate": creation_date})
+        received_json_data.update({"serviceRequestNumber": service_request_number})
+        received_json_data.update({"completionDate": None})
+
+        query = incident_collection.insert_one(received_json_data)
+        print(query)
+        print(creation_date, " ", service_request_number)
+
+        message = "New Incedent successfully Inserted\nService Request Number: " + service_request_number
+        return JsonResponse(message, safe=False, status=status.HTTP_201_CREATED)
+
+    return JsonResponse("Error", safe=False, status=status.HTTP_501_NOT_IMPLEMENTED)
