@@ -52,19 +52,7 @@ def query1_view(request):
     return JsonResponse(data, safe=False)
 
 
-'''
-db.ci_311_incident.aggregate([
-    {$match:
-            {creationDate: {$gt: new ISODate("2014-06-22T21:00:00Z"), $lt: new ISODate("2015-06-22T21:00:00Z")},
-                requestType: "Street Light Out"}},
-    {$group: {
-        _id: "$creationDate", Total: { $sum: 1 }}
-}])
-'''
-
-
 def query2_view(request):
-
     client = MongoClient()
     db = client['ci_311db']
     incident_collection = db['ci_311_incident']
@@ -138,20 +126,6 @@ def query3_view(request):
     return JsonResponse(data, safe=False)
 
 
-'''
-db.ci_311_incident.aggregate([
-     {$match: {requestType: "Abandoned Vehicle Complaint"}},
-     {$group: {
-         _id: "$ward",
-         count: {$sum:1}}
-     },
-     {$sort:{count:1}},
-     {$limit:3},
-     {$project: {ward: 1, count: 1}}
-])
-'''
-
-
 def query4_view(request):
     client = MongoClient()
     db = client['ci_311db']
@@ -206,25 +180,7 @@ def query5_view(request):
     return JsonResponse(data, safe=False)
 
 
-'''
-db.ci_311_incident.aggregate([
-    {$match:    
-            {
-                creationDate: new ISODate("2015-06-04T21:00:00.000Z"),
-                latitude: {$gt: 41.80550003051758, $lt: 41.80963897705078},
-                longitude: {$gt: -87.70037841796875, $lt: -87.62371063232422}
-            }
-    },
-    {$group: {
-        _id: "$requestType",
-        count: {$sum:1}}
-    },
-    {$sort:{count:-1}},
-    {$limit: 1}
-])
-'''
-
-#http://127.0.0.1:8000/query6/?Date=2015-06-04T21:00:00Z&latitude_1=41.80550003051758&latitude_2=41.80963897705078
+# http://127.0.0.1:8000/query6/?Date=2015-06-04T21:00:00Z&latitude_1=41.80550003051758&latitude_2=41.80963897705078
 # &longitude_1=-87.70037841796875&longitude_2=-87.62371063232422
 
 
@@ -296,20 +252,6 @@ def query7_view(request):
     return JsonResponse(data, safe=False)
 
 
-'''
-db.ci_311_users.aggregate([
-    {$project: {
-           _id: 0,
-           name: 1,
-           numberOfIncidents: {$cond: {if: {$isArray: "$upvotes"}, then: {$size: "$upvotes"}, else: "NA"}}
-       }
-    },
-    {$sort:{numberOfIncidents:-1}},
-    {$limit:50}
-])
-'''
-
-
 def query8_view(request):
     client = MongoClient()
     db = client['ci_311db']
@@ -359,29 +301,6 @@ def query9_view(request):
     return JsonResponse(data, safe=False)
 
 
-'''
-db.ci_311_users.aggregate([
-    {$group:
-            {
-                _id: "$phone",
-                incidentsForUniquePhones: {$addToSet: "$_id"},
-                count: {$sum: 1}
-            }
-    },
-    {$match:
-            {count: {"$gt": 1}}
-    },
-    {$project:
-            {
-                _id: 1,
-                incidentsForUniquePhones: 1,
-                count: 1
-            }
-    }
-])
-'''
-
-
 def query10_view(request):
     client = MongoClient()
     db = client['ci_311db']
@@ -389,20 +308,20 @@ def query10_view(request):
 
     raw_query_data = users_collection.aggregate([
 
-    {"$group": {
-                "_id": { "phone":"$phone"},
-                "incidentsForUniquePhones": {"$addToSet": "$upvotes"},
-                "count": {"$sum": 1}
+        {"$group": {
+            "_id": {"phone": "$phone"},
+            "incidentsForUniquePhones": {"$addToSet": "$upvotes"},
+            "count": {"$sum": 1}
 
-    }},
-    {"$match": {
-        "count": {"$gt": 1}
-    }},
-    {"$project": {
-                "_id": 1,
-                "incidentsForUniquePhones": 1,
+        }},
+        {"$match": {
+            "count": {"$gt": 1}
+        }},
+        {"$project": {
+            "_id": 1,
+            "incidentsForUniquePhones": 1,
 
-    }}
+        }}
     ], allowDiskUse=True)
 
     data = []
@@ -437,6 +356,7 @@ def query12_view(request):
     return JsonResponse(data, safe=False)
 
 
+@api_view(['POST'])
 def insert_new_incident(request):
     received_json_data = json.loads(request.body.decode("utf-8"))
 
@@ -447,7 +367,6 @@ def insert_new_incident(request):
     valid_request_types = incident_collection.distinct("requestType")
 
     if received_json_data['requestType'] in valid_request_types:
-
         print("Ok " + received_json_data['requestType'])
 
         creation_date = datetime.datetime.now()
@@ -469,7 +388,6 @@ def insert_new_incident(request):
 
 @api_view(['PUT'])
 def upvote_view(request):
-
     client = MongoClient()
     db = client['ci_311db']
     testsCollection = db['mytests']
@@ -478,11 +396,11 @@ def upvote_view(request):
 
     parameters_dict = json.loads(request.body)
     result = users_collection.update_one({"name": parameters_dict['name']},
-                                    {"$addToSet": {"upvotes": ObjectId(parameters_dict['id'])}})
+                                         {"$addToSet": {"upvotes": ObjectId(parameters_dict['id'])}})
 
     if result.modified_count != 0:
         incident_result = incident_collection.update_one({"_id": ObjectId(parameters_dict['id'])},
-                                                        {"$addToSet": {"names": parameters_dict['name']}})
+                                                         {"$addToSet": {"names": parameters_dict['name']}})
         print("Incident fields modified")
         print(incident_result.modified_count)
 
@@ -490,4 +408,3 @@ def upvote_view(request):
     print(result.modified_count)
     data = result.modified_count
     return JsonResponse(data, safe=False)
-
