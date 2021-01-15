@@ -142,10 +142,12 @@ db.ci_311_incident.aggregate([
 
 #Query 10
 db.ci_311_users.aggregate([
-
+    {$unwind:
+            "$upvotes"
+    },
     {$group: {
-                _id: { phone:"$phone"},
-                incidentsForUniquePhones: {$addToSet: "$upvotes"},
+                _id: { phone:"$phone", upvote: "$upvotes"},
+                incidentsForUniquePhones: {"$addToSet": "$_id"},
                 count: {$sum: 1}
 
     }},
@@ -154,8 +156,7 @@ db.ci_311_users.aggregate([
     }},
     {$project: {
                 _id: 1,
-                incidentsForUniquePhones: 1,
-
+                distinctIncidentIds: 1
     }}
     ],
     {allowDiskUse:true}
