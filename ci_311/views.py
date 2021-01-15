@@ -1,18 +1,14 @@
 import datetime
-import json
 import re
 
-from django.core.serializers.json import DjangoJSONEncoder
 from django.http import JsonResponse
 from rest_framework import status
-from rest_framework.views import APIView
 
 from ci_311.models import *
 from django.core import serializers
 from pymongo import MongoClient
 from bson.objectid import ObjectId
 from rest_framework.decorators import api_view
-from rest_framework.parsers import JSONParser
 import json
 
 
