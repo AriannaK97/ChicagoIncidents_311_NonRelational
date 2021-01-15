@@ -298,12 +298,12 @@ def query9_view(request):
             "_id": {
                 "upvotes": "$names",
                 "ward": "$ward",
-            },
-            "wardCount": {"$sum": 1}
+            }
         }},
+        {"$group": {"_id": "$_id.upvotes", "wardCount": {"$sum": 1}}},
         {"$sort": {"wardCount": -1}},
         {"$limit": 50},
-        {"$project": {"_id": 0, "Name": "$_id.upvotes", "totalWards": "$wardCount"}}
+        {"$project": {"_id": 0, "Name": "$_id", "totalWards": "$wardCount"}}
 
     ], allowDiskUse=True)
 
