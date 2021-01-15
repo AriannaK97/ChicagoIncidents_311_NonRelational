@@ -16,6 +16,7 @@ from rest_framework.parsers import JSONParser
 import json
 
 
+@api_view(['GET'])
 def incident_view(request):
     id = '5ff8ae49de4f5fd78275d71c'
     incidents = Incident.objects.filter(censusTracts=779)
@@ -23,6 +24,7 @@ def incident_view(request):
     return JsonResponse(data, safe=False)
 
 
+@api_view(['GET'])
 def query1_view(request):
     client = MongoClient()
     db = client['ci_311db']
@@ -52,6 +54,7 @@ def query1_view(request):
     return JsonResponse(data, safe=False)
 
 
+@api_view(['GET'])
 def query2_view(request):
     client = MongoClient()
     db = client['ci_311db']
@@ -82,13 +85,16 @@ def query2_view(request):
     return JsonResponse(data, safe=False)
 
 
+@api_view(['GET'])
 def query3_view(request):
     client = MongoClient()
     db = client['ci_311db']
     incident_collection = db['ci_311_incident']
 
-    start_date_str = request.GET.get('startDate')
-    end_date_str = request.GET.get('endDate')
+    date = request.GET.get('Date')
+    date, time = date.split('T')
+    start_date_str = date + 'T00:00:00Z'
+    end_date_str = date + 'T23:59:59Z'
 
     start_date = datetime.datetime.strptime(start_date_str, '%Y-%m-%dT%H:%M:%SZ')
     end_date = datetime.datetime.strptime(end_date_str, '%Y-%m-%dT%H:%M:%SZ')
@@ -126,6 +132,7 @@ def query3_view(request):
     return JsonResponse(data, safe=False)
 
 
+@api_view(['GET'])
 def query4_view(request):
     client = MongoClient()
     db = client['ci_311db']
@@ -150,7 +157,7 @@ def query4_view(request):
     return JsonResponse(data, safe=False)
 
 
-# TODO: CHECK HOW TO PASS NULL....
+@api_view(['GET'])
 def query5_view(request):
     client = MongoClient()
     db = client['ci_311db']
@@ -183,27 +190,31 @@ def query5_view(request):
 # http://127.0.0.1:8000/query6/?Date=2015-06-04T21:00:00Z&latitude_1=41.80550003051758&latitude_2=41.80963897705078
 # &longitude_1=-87.70037841796875&longitude_2=-87.62371063232422
 
-
+@api_view(['GET'])
 def query6_view(request):
     client = MongoClient()
     db = client['ci_311db']
     incident_collection = db['ci_311_incident']
 
-    date_str = request.GET.get('Date')
+    date = request.GET.get('Date')
+    date, time = date.split('T')
+    start_date_str = date + 'T00:00:00Z'
+    end_date_str = date + 'T23:59:59Z'
+
     latitude_1 = float(request.GET.get('latitude_1'))
     latitude_2 = float(request.GET.get('latitude_2'))
     longitude_1 = float(request.GET.get('longitude_1'))
     longitude_2 = float(request.GET.get('longitude_2'))
 
-    date = datetime.datetime.strptime(date_str, '%Y-%m-%dT%H:%M:%SZ')
+    start_date = datetime.datetime.strptime(start_date_str, '%Y-%m-%dT%H:%M:%SZ')
+    end_date = datetime.datetime.strptime(end_date_str, '%Y-%m-%dT%H:%M:%SZ')
 
     query_raw_data = incident_collection.aggregate(pipeline=[
-        {"$match":
-            {
-                "creationDate": date,
-                "latitude": {"$gt": latitude_1, "$lt": latitude_2},
-                "longitude": {"$gt": longitude_1, "$lt": longitude_2}
-            }},
+        {"$match": {
+            "creationDate": {"$gte": start_date, "$lt": end_date},
+            "latitude": {"$gt": latitude_1, "$lt": latitude_2},
+            "longitude": {"$gt": longitude_1, "$lt": longitude_2}
+        }},
         {"$group": {
             "_id": "$requestType",
             "count": {"$sum": 1}
@@ -221,13 +232,16 @@ def query6_view(request):
     return JsonResponse(data, safe=False)
 
 
+@api_view(['GET'])
 def query7_view(request):
     client = MongoClient()
     db = client['ci_311db']
     incident_collection = db['ci_311_incident']
 
-    start_date_str = request.GET.get('startDate')
-    end_date_str = request.GET.get('endDate')
+    date = request.GET.get('Date')
+    date, time = date.split('T')
+    start_date_str = date + 'T00:00:00Z'
+    end_date_str = date + 'T23:59:59Z'
 
     start_date = datetime.datetime.strptime(start_date_str, '%Y-%m-%dT%H:%M:%SZ')
     end_date = datetime.datetime.strptime(end_date_str, '%Y-%m-%dT%H:%M:%SZ')
@@ -252,6 +266,7 @@ def query7_view(request):
     return JsonResponse(data, safe=False)
 
 
+@api_view(['GET'])
 def query8_view(request):
     client = MongoClient()
     db = client['ci_311db']
@@ -276,6 +291,7 @@ def query8_view(request):
     return JsonResponse(data, safe=False)
 
 
+@api_view(['GET'])
 def query9_view(request):
     client = MongoClient()
     db = client['ci_311db']
@@ -301,6 +317,7 @@ def query9_view(request):
     return JsonResponse(data, safe=False)
 
 
+@api_view(['GET'])
 def query10_view(request):
     client = MongoClient()
     db = client['ci_311db']
@@ -331,6 +348,7 @@ def query10_view(request):
     return JsonResponse(data, safe=False)
 
 
+@api_view(['GET'])
 def query11_view(request):
     client = MongoClient()
     db = client['ci_311db']
@@ -380,7 +398,7 @@ def insert_new_incident(request):
         print(query)
         print(creation_date, " ", service_request_number)
 
-        message = "New Incedent successfully Inserted\nService Request Number: " + service_request_number
+        message = "New Incident successfully Inserted\nService Request Number: " + service_request_number
         return JsonResponse(message, safe=False, status=status.HTTP_201_CREATED)
 
     return JsonResponse("Error", safe=False, status=status.HTTP_501_NOT_IMPLEMENTED)
@@ -407,4 +425,5 @@ def upvote_view(request):
     print("User Fields modified:")
     print(result.modified_count)
     data = result.modified_count
-    return JsonResponse(data, safe=False)
+    message = "Updated: " + data
+    return JsonResponse(message, safe=False)
