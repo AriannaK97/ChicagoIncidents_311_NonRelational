@@ -242,7 +242,7 @@ def query7_view(request):
     start_date = datetime.datetime.strptime(start_date_str, '%Y-%m-%dT%H:%M:%SZ')
     end_date = datetime.datetime.strptime(end_date_str, '%Y-%m-%dT%H:%M:%SZ')
 
-    query_raw_data = incident_collection.aggregate(pipeline=[
+    query_raw_data = incident_collection.aggregate([
         {"$match": {"creationDate": {
             "$gte": start_date,
             "$lt": end_date
@@ -292,7 +292,7 @@ def query9_view(request):
     client = MongoClient()
     db = client['ci_311db']
     incident_collection = db['ci_311_incident']
-    query_raw_data = incident_collection.aggregate(pipeline=[
+    query_raw_data = incident_collection.aggregate([
         {"$unwind": "$names"},
         {"$group": {
             "_id": {
@@ -350,7 +350,7 @@ def query11_view(request):
     db = client['ci_311db']
     incident_collection = db['ci_311_incident']
     name = request.GET.get('name')
-    query_raw_data = incident_collection.aggregate(pipeline=[
+    query_raw_data = incident_collection.aggregate([
         {"$unwind": "$names"},
         {"$match": {"names": name}},
         {"$group": {"_id": "$ward"}},
@@ -421,5 +421,5 @@ def upvote_view(request):
     print("User Fields modified:")
     print(result.modified_count)
     data = result.modified_count
-    message = "Updated: " + data
+    message = "Updated: " + str(data)
     return JsonResponse(message, safe=False)
