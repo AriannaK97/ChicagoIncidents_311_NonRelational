@@ -142,25 +142,20 @@ db.ci_311_incident.aggregate([
 
 #Query 10
 db.ci_311_users.aggregate([
-    {$unwind:
-            "$upvotes"
-    },
-    {$group: {
-                _id: { phone:"$phone", upvote: "$upvotes"},
-                incidentsForUniquePhones: {"$addToSet": "$_id"},
-                count: {$sum: 1}
-
+    {"$unwind": "$upvotes"},
+    { "$group": {
+        "_id": {
+            "phone": "$phone",
+            "id": "$upvotes"
+        },
+            "uniqueIds": { "$addToSet": "$_id" },
+            "count": { "$sum": 1 }
     }},
-    {$match: {
-        count: {$gt: 1}
+    { "$match": {
+        "count": { "$gt": 1 }
     }},
-    {$project: {
-                _id: 1,
-                distinctIncidentIds: 1
-    }}
-    ],
-    {allowDiskUse:true}
-)
+    {"$project": {"_id": "$_id.id", "phone": "$_id.phone"}}
+],{ allowDiskUse:true })
 
 #Query 11
 db.ci_311_incident.aggregate([
