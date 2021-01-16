@@ -24,7 +24,7 @@ def incident_view(request):
 def query1_view(request):
     client = MongoClient()
     db = client['ci_311db']
-    incident_collection = db['ci_311_incident']
+    incident_collection = db['incident']
 
     start_date_str = request.GET.get('startDate')
     end_date_str = request.GET.get('endDate')
@@ -54,7 +54,7 @@ def query1_view(request):
 def query2_view(request):
     client = MongoClient()
     db = client['ci_311db']
-    incident_collection = db['ci_311_incident']
+    incident_collection = db['incident']
 
     start_date_str = request.GET.get('startDate')
     end_date_str = request.GET.get('endDate')
@@ -85,7 +85,7 @@ def query2_view(request):
 def query3_view(request):
     client = MongoClient()
     db = client['ci_311db']
-    incident_collection = db['ci_311_incident']
+    incident_collection = db['incident']
 
     date = request.GET.get('Date')
     date, time = date.split('T')
@@ -132,7 +132,7 @@ def query3_view(request):
 def query4_view(request):
     client = MongoClient()
     db = client['ci_311db']
-    incident_collection = db['ci_311_incident']
+    incident_collection = db['incident']
 
     request_type = request.GET.get('requestType')
 
@@ -157,7 +157,7 @@ def query4_view(request):
 def query5_view(request):
     client = MongoClient()
     db = client['ci_311db']
-    incident_collection = db['ci_311_incident']
+    incident_collection = db['incident']
 
     start_date_str = request.GET.get('startDate')
     end_date_str = request.GET.get('endDate')
@@ -190,7 +190,7 @@ def query5_view(request):
 def query6_view(request):
     client = MongoClient()
     db = client['ci_311db']
-    incident_collection = db['ci_311_incident']
+    incident_collection = db['incident']
 
     date = request.GET.get('Date')
     date, time = date.split('T')
@@ -232,7 +232,7 @@ def query6_view(request):
 def query7_view(request):
     client = MongoClient()
     db = client['ci_311db']
-    incident_collection = db['ci_311_incident']
+    incident_collection = db['incident']
 
     date = request.GET.get('Date')
     date, time = date.split('T')
@@ -247,9 +247,9 @@ def query7_view(request):
             "$gte": start_date,
             "$lt": end_date
         },
-            "names": {"$exists": True}
+            "voters": {"$exists": True}
         }},
-        {"$unwind": "$names"},
+        {"$unwind": "$voters"},
         {"$group": {"_id": '$_id', 'count': {"$sum": 1}}},
         {"$sort": {"count": -1}},
         {"$limit": 50}
@@ -266,7 +266,7 @@ def query7_view(request):
 def query8_view(request):
     client = MongoClient()
     db = client['ci_311db']
-    users_collection = db['ci_311_users']
+    users_collection = db['citizens']
 
     query_raw_data = users_collection.aggregate([
         {"$project": {
@@ -291,13 +291,13 @@ def query8_view(request):
 def query9_view(request):
     client = MongoClient()
     db = client['ci_311db']
-    incident_collection = db['ci_311_incident']
+    incident_collection = db['incident']
     query_raw_data = incident_collection.aggregate(pipeline=[
-        {"$unwind": "$names"},
+        {"$unwind": "$voters"},
         {"$group": {
             "_id": {
-                "upvotes": "$names",
-                "ward": "$ward",
+                "upvotes": "$voters.name",
+                "ward": "$ward"
             }
         }},
         {"$group": {"_id": "$_id.upvotes", "wardCount": {"$sum": 1}}},
@@ -317,24 +317,22 @@ def query9_view(request):
 def query10_view(request):
     client = MongoClient()
     db = client['ci_311db']
-    users_collection = db['ci_311_users']
+    users_collection = db['citizens']
 
     raw_query_data = users_collection.aggregate([
-
+        {"$unwind": "$voters"},
         {"$group": {
-            "_id": {"phone": "$phone"},
-            "incidentsForUniquePhones": {"$addToSet": "$upvotes"},
+            "_id": {
+                "id": "$_id",
+                "phone": "$voters.phone"
+            },
+            "uniqueIds": {"$addToSet": "$_id"},
             "count": {"$sum": 1}
-
         }},
         {"$match": {
             "count": {"$gt": 1}
         }},
-        {"$project": {
-            "_id": 1,
-            "incidentsForUniquePhones": 1,
-
-        }}
+        {"$project": {"_id": "$_id.id", "phone": "$_id.phone"}}
     ], allowDiskUse=True)
 
     data = []
@@ -348,11 +346,11 @@ def query10_view(request):
 def query11_view(request):
     client = MongoClient()
     db = client['ci_311db']
-    incident_collection = db['ci_311_incident']
+    incident_collection = db['incident']
     name = request.GET.get('name')
     query_raw_data = incident_collection.aggregate(pipeline=[
-        {"$unwind": "$names"},
-        {"$match": {"names": name}},
+        {"$unwind": "$voters"},
+        {"$match": {"voters.name": name}},
         {"$group": {"_id": "$ward"}},
         {"$project": {"_id": 0, "WardIds": "$_id"}}
     ],
@@ -376,7 +374,7 @@ def insert_new_incident(request):
 
     client = MongoClient()
     db = client['ci_311db']
-    incident_collection = db['ci_311_incident']
+    incident_collection = db['incident']
 
     valid_request_types = incident_collection.distinct("requestType")
 
@@ -404,9 +402,8 @@ def insert_new_incident(request):
 def upvote_view(request):
     client = MongoClient()
     db = client['ci_311db']
-    testsCollection = db['mytests']
-    users_collection = db['ci_311_users']
-    incident_collection = db['ci_311_incident']
+    users_collection = db['citizens']
+    incident_collection = db['incident']
 
     parameters_dict = json.loads(request.body)
     result = users_collection.update_one({"name": parameters_dict['name']},

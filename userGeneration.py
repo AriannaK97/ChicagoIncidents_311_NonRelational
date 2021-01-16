@@ -9,14 +9,14 @@ import uuid
 from bson.objectid import ObjectId
 import copy
 
-batchSize = 50000
+batchSize = 3000
 bulkSize=1000
 fake = Factory.create()
 
 client = MongoClient()
 db = client['ci_311db']
-incidentCollection = db['ci_311_incident']
-userCollection = db['ci_311_users']
+incidentCollection = db['incident']
+userCollection = db['citizens']
 
 
 bulkUsers = userCollection.initialize_unordered_bulk_op()
@@ -46,7 +46,7 @@ for i in range(batchSize):
 
         for incident in incidents:
         	upvotes.append(incident.get('_id'))
-        	incidentResult = bulkIncidents.find({ '_id': incident.get('_id') }).update( { "$addToSet": { "names" : name } })
+        	incidentResult = bulkIncidents.find({ '_id': incident.get('_id') }).update( { "$addToSet": { "voters" : {"name": name, "phone":phone} } })
 
 
         result=bulkUsers.insert({

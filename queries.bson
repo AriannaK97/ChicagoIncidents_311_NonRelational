@@ -1,5 +1,5 @@
 #Query 1
-db.ci_311_incident.aggregate([
+db.incident.aggregate([
     { $match: { "creationDate" :
    		{
 			"$gte" : ISODate("2014-07-02T00:00:00Z"),
@@ -13,7 +13,7 @@ db.ci_311_incident.aggregate([
     ])
 
 #Query 2
-db.ci_311_incident.aggregate([
+db.incident.aggregate([
     {$match:
             {creationDate: {$gt: new ISODate("2014-06-22T21:00:00Z"), $lt: new ISODate("2015-06-22T21:00:00Z")},
                 requestType: "Street Light Out"}},
@@ -22,7 +22,7 @@ db.ci_311_incident.aggregate([
 }])
 
 #Query 3
-db.ci_311_incident.aggregate([
+db.incident.aggregate([
     { $match: {"creationDate" : {
 	    "$gte" : ISODate("2014-07-02T00:00:00Z"),
 	    "$lt" : ISODate("2014-07-02T23:59:59Z")
@@ -50,7 +50,7 @@ db.ci_311_incident.aggregate([
 ])
 
 #Query 4
-db.ci_311_incident.aggregate([
+db.incident.aggregate([
      {$match: {requestType: "Abandoned Vehicle Complaint"}},
      {$group: {
          _id: "$ward",
@@ -62,7 +62,7 @@ db.ci_311_incident.aggregate([
 ])
 
 #Query 5
-db.ci_311_incident.aggregate([
+db.incident.aggregate([
     { "$match": {"$expr":  { "$and": [
                 { $gt: [ "$completionDate" , "$creationDate" ] },
     			{ $gte: [ "$creationDate" , ISODate("2014-07-02T00:00:00Z") ] },
@@ -76,7 +76,7 @@ db.ci_311_incident.aggregate([
 ])
 
 #Query 6
-db.ci_311_incident.aggregate([
+db.incident.aggregate([
     {$match:
             {
                 creationDate: new ISODate("2015-06-04T21:00:00Z"),
@@ -93,15 +93,15 @@ db.ci_311_incident.aggregate([
 ])
 
 #Query 7
-db.ci_311_incident.aggregate([
+db.incident.aggregate([
     { "$match": { "creationDate" : {
 	    "$gte" : ISODate("2014-07-02T00:00:00Z"),
 	    "$lt" : ISODate("2014-07-02T23:59:59Z")
 		},
-        "names" : { "$exists": true}
+        "voters" : { "$exists": true}
         }
 	},
-    { "$unwind": "$names" },
+    { "$unwind": "$voters" },
     { "$group": { "_id": '$_id', 'count': { $sum: 1}}},
     { "$sort": { "count": -1}},
     { "$limit": 50},
@@ -111,7 +111,7 @@ db.ci_311_incident.aggregate([
     )
 
 #Query 8
-db.ci_311_users.aggregate([
+db.citizens.aggregate([
     {$project: {
            _id: 0,
            name: 1,
@@ -125,11 +125,11 @@ db.ci_311_users.aggregate([
 #25 s 411 ms with index in ward
 #24 s 899 ms with ward and name index
 #Query 9
-db.ci_311_incident.aggregate([
-    { "$unwind": "$names" },
+db.incident.aggregate([
+    { "$unwind": "$voters" },
     { "$group": {
         "_id": {
-            "upvotes": "$names",
+            "upvotes": "$voters.name",
             "ward": "$ward"
         }
     }},
@@ -141,31 +141,27 @@ db.ci_311_incident.aggregate([
  ],{ allowDiskUse:true })
 
 #Query 10
-db.ci_311_users.aggregate([
-    {$unwind:
-            "$upvotes"
-    },
-    {$group: {
-                _id: { phone:"$phone", upvote: "$upvotes"},
-                incidentsForUniquePhones: {"$addToSet": "$_id"},
-                count: {$sum: 1}
+db.incident.aggregate([
+    {"$unwind": "$voters"},
+    { "$group": {
+        "_id": {
+            "id": "$_id",
+            "phone": "$voters.phone"
+        },
+            "uniqueIds": { "$addToSet": "$_id" },
+            "count": { "$sum": 1 }
+    }},
+    { "$match": {
+        "count": { "$gt": 1 }
+    }},
+    {"$project": {"_id": "$_id.id", "phone": "$_id.phone"}}
+],{ allowDiskUse:true })
 
-    }},
-    {$match: {
-        count: {$gt: 1}
-    }},
-    {$project: {
-                _id: 1,
-                distinctIncidentIds: 1
-    }}
-    ],
-    {allowDiskUse:true}
-)
 
 #Query 11
-db.ci_311_incident.aggregate([
-    { "$unwind": "$names" },
-    { "$match" : { "names" : "Michael Johnson" } },
+db.incident.aggregate([
+    { "$unwind": "$voters" },
+    { "$match" : { "voters.name" : "Michael Johnson" } },
     { "$group": { "_id" : "$ward" } },
     { "$project": { "_id": 0, "WardIds" : "$_id" }}
  ],{ allowDiskUse:true })
