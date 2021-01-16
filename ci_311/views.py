@@ -321,20 +321,20 @@ def query10_view(request):
 
     raw_query_data = users_collection.aggregate([
 
+        {"$unwind": "$upvotes"},
         {"$group": {
-            "_id": {"phone": "$phone"},
-            "incidentsForUniquePhones": {"$addToSet": "$upvotes"},
+            "_id": {
+                "phone": "$phone",
+                "id": "$upvotes"
+            },
+            "uniqueIds": {"$addToSet": "$_id"},
             "count": {"$sum": 1}
-
         }},
         {"$match": {
             "count": {"$gt": 1}
         }},
-        {"$project": {
-            "_id": 1,
-            "incidentsForUniquePhones": 1,
-
-        }}
+        {"$group": {"_id": "$_id.id"}},
+        {"$project": {"_id": 0, "IncidentId": "$_id"}}
     ], allowDiskUse=True)
 
     data = []
