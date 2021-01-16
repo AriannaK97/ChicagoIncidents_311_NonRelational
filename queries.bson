@@ -141,12 +141,12 @@ db.incident.aggregate([
  ],{ allowDiskUse:true })
 
 #Query 10
-db.incident.aggregate([
-    {"$unwind": "$voters"},
+db.ci_311_users.aggregate([
+    {"$unwind": "$upvotes"},
     { "$group": {
         "_id": {
-            "id": "$_id",
-            "phone": "$voters.phone"
+            "phone": "$phone",
+            "id": "$upvotes"
         },
             "uniqueIds": { "$addToSet": "$_id" },
             "count": { "$sum": 1 }

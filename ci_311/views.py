@@ -320,11 +320,11 @@ def query10_view(request):
     users_collection = db['citizens']
 
     raw_query_data = users_collection.aggregate([
-        {"$unwind": "$voters"},
+        {"$unwind": "$upvotes"},
         {"$group": {
             "_id": {
-                "id": "$_id",
-                "phone": "$voters.phone"
+                "phone": "$phone",
+                "id": "$upvotes"
             },
             "uniqueIds": {"$addToSet": "$_id"},
             "count": {"$sum": 1}
