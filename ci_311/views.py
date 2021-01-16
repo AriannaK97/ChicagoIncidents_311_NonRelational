@@ -32,7 +32,7 @@ def query1_view(request):
     start_date = datetime.datetime.strptime(start_date_str, '%Y-%m-%dT%H:%M:%SZ')
     end_date = datetime.datetime.strptime(end_date_str, '%Y-%m-%dT%H:%M:%SZ')
 
-    query_raw_data = incident_collection.aggregate(pipeline=[
+    query_raw_data = incident_collection.aggregate([
         {"$match": {"creationDate":
             {
                 "$gte": start_date,
@@ -62,7 +62,7 @@ def query2_view(request):
     start_date = datetime.datetime.strptime(start_date_str, '%Y-%m-%dT%H:%M:%SZ')
     end_date = datetime.datetime.strptime(end_date_str, '%Y-%m-%dT%H:%M:%SZ')
 
-    query_raw_data = incident_collection.aggregate(pipeline=[
+    query_raw_data = incident_collection.aggregate([
         {"$match":
             {
                 "creationDate": {"$gt": start_date, "$lt": end_date},
@@ -95,7 +95,7 @@ def query3_view(request):
     start_date = datetime.datetime.strptime(start_date_str, '%Y-%m-%dT%H:%M:%SZ')
     end_date = datetime.datetime.strptime(end_date_str, '%Y-%m-%dT%H:%M:%SZ')
 
-    query_raw_data = incident_collection.aggregate(pipeline=[
+    query_raw_data = incident_collection.aggregate([
         {"$match": {"creationDate": {
             "$gte": start_date,
             "$lt": end_date
@@ -165,7 +165,7 @@ def query5_view(request):
     start_date = datetime.datetime.strptime(start_date_str, '%Y-%m-%dT%H:%M:%SZ')
     end_date = datetime.datetime.strptime(end_date_str, '%Y-%m-%dT%H:%M:%SZ')
 
-    query_raw_data = incident_collection.aggregate(pipeline=[
+    query_raw_data = incident_collection.aggregate([
         {"$match": {"$expr": {"$and": [
             {"$gt": ["$completionDate", "$creationDate"]},
             {"$gte": ["$creationDate", start_date]},
@@ -205,7 +205,7 @@ def query6_view(request):
     start_date = datetime.datetime.strptime(start_date_str, '%Y-%m-%dT%H:%M:%SZ')
     end_date = datetime.datetime.strptime(end_date_str, '%Y-%m-%dT%H:%M:%SZ')
 
-    query_raw_data = incident_collection.aggregate(pipeline=[
+    query_raw_data = incident_collection.aggregate([
         {"$match": {
             "creationDate": {"$gte": start_date, "$lt": end_date},
             "latitude": {"$gt": latitude_1, "$lt": latitude_2},
@@ -242,7 +242,7 @@ def query7_view(request):
     start_date = datetime.datetime.strptime(start_date_str, '%Y-%m-%dT%H:%M:%SZ')
     end_date = datetime.datetime.strptime(end_date_str, '%Y-%m-%dT%H:%M:%SZ')
 
-    query_raw_data = incident_collection.aggregate(pipeline=[
+    query_raw_data = incident_collection.aggregate([
         {"$match": {"creationDate": {
             "$gte": start_date,
             "$lt": end_date
@@ -292,7 +292,7 @@ def query9_view(request):
     client = MongoClient()
     db = client['ci_311db']
     incident_collection = db['incident']
-    query_raw_data = incident_collection.aggregate(pipeline=[
+    query_raw_data = incident_collection.aggregate([
         {"$unwind": "$voters"},
         {"$group": {
             "_id": {
@@ -348,7 +348,7 @@ def query11_view(request):
     db = client['ci_311db']
     incident_collection = db['incident']
     name = request.GET.get('name')
-    query_raw_data = incident_collection.aggregate(pipeline=[
+    query_raw_data = incident_collection.aggregate([
         {"$unwind": "$voters"},
         {"$match": {"voters.name": name}},
         {"$group": {"_id": "$ward"}},
