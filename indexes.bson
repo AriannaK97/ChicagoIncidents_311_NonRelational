@@ -4,4 +4,3 @@ db.ci_311_incident.createIndex({requestType:1})
 
 db.ci_311_incident.createIndex({creationDate:1})
 
-db.ci_311_incident.createIndex({completionDate:1})
