@@ -58,6 +58,7 @@ def query2_view(request):
 
     start_date_str = request.GET.get('startDate')
     end_date_str = request.GET.get('endDate')
+    requestType_str = request.GET.get('requestType')
 
     start_date = datetime.datetime.strptime(start_date_str, '%Y-%m-%dT%H:%M:%SZ')
     end_date = datetime.datetime.strptime(end_date_str, '%Y-%m-%dT%H:%M:%SZ')
@@ -66,7 +67,7 @@ def query2_view(request):
         {"$match":
             {
                 "creationDate": {"$gt": start_date, "$lt": end_date},
-                "requestType": "Street Light Out"}},
+                "requestType": requestType_str}},
         {"$group": {
             "_id": "$creationDate",
             "Total": {"$sum": 1}
@@ -339,7 +340,7 @@ def query10_view(request):
 
     data = []
     for i in raw_query_data:
-        data.append([i["_id"], str(i["incidentsForUniquePhones"])])
+        data.append([str(i["IncidentId"])])
     print(data)
     return JsonResponse(data, safe=False)
 
