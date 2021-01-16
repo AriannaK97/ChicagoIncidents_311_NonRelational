@@ -317,9 +317,9 @@ def query9_view(request):
 def query10_view(request):
     client = MongoClient()
     db = client['ci_311db']
-    users_collection = db['citizens']
+    incident_collection = db['incident']
 
-    raw_query_data = users_collection.aggregate([
+    raw_query_data = incident_collection.aggregate([
         {"$unwind": "$voters"},
         {"$group": {
             "_id": {

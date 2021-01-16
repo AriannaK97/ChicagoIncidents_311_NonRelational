@@ -1,4 +1,6 @@
 #used https://github.com/Wilpapa/mongdb-faker-sample/blob/master/fakerFR.py as main source.
+from pprint import pprint
+
 from pymongo import MongoClient
 from faker import Factory
 import time
@@ -9,8 +11,10 @@ import uuid
 from bson.objectid import ObjectId
 import copy
 
-batchSize = 3000
-bulkSize=1000
+from pymongo.errors import BulkWriteError
+
+batchSize = 16000
+bulkSize=500
 fake = Factory.create()
 
 client = MongoClient()
