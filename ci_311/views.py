@@ -411,12 +411,13 @@ def upvote_view(request):
 
     if result.modified_count != 0:
         incident_result = incident_collection.update_one({"_id": ObjectId(parameters_dict['id'])},
-                                                         {"$addToSet": {"names": parameters_dict['name']}})
+                                                         {"$addToSet": {"voters": {"name": parameters_dict['name'],
+                                                                                   "phone": parameters_dict['phone']}}})
         print("Incident fields modified")
         print(incident_result.modified_count)
 
     print("User Fields modified:")
     print(result.modified_count)
     data = result.modified_count
-    message = "Updated: " + data
+    message = "Updated: " + str(data)
     return JsonResponse(message, safe=False)
